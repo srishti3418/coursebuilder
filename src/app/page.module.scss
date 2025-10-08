@@ -1,0 +1,298 @@
+.home {
+  padding: 0;
+  min-height: 100vh;
+  position: relative;
+  
+  // Modern background pattern
+  &::before {
+    content: '';
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: 
+      radial-gradient(circle at 20% 80%, rgba(120, 119, 198, 0.3) 0%, transparent 50%),
+      radial-gradient(circle at 80% 20%, rgba(255, 119, 198, 0.3) 0%, transparent 50%),
+      radial-gradient(circle at 40% 40%, rgba(120, 219, 255, 0.2) 0%, transparent 50%);
+    z-index: -1;
+    pointer-events: none;
+  }
+}
+
+.hero {
+  background: var(--gradient-modern);
+  color: white;
+  padding: 6rem 2rem;
+  text-align: center;
+  margin: 2rem -2rem;
+  position: relative;
+  overflow: hidden;
+  border-radius: 10px;
+
+  
+  // Modern glassmorphism overlay
+  &::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(10px);
+    z-index: 1;
+  }
+  
+  // Animated background elements
+  &::after {
+    content: '';
+    position: absolute;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    background: 
+      radial-gradient(circle, rgba(255, 255, 255, 0.1) 1px, transparent 1px);
+    background-size: 50px 50px;
+    animation: float 20s ease-in-out infinite;
+    z-index: 0;
+  }
+
+  @media (max-width: 768px) {
+    padding: 4rem 1rem;
+    margin: 0 -1rem 4rem -1rem;
+  }
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0px) rotate(0deg); }
+  50% { transform: translateY(-20px) rotate(180deg); }
+}
+
+.heroContent {
+  max-width: 900px;
+  margin: 0 auto;
+  position: relative;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+
+  @media (max-width: 768px) {
+    // On mobile, we want: title -> prompt -> features
+    .title { order: 1; }
+    .features { order: 3; }
+    .promptContainer { order: 2; }
+  }
+}
+
+.title {
+  font-size: 3rem;
+  font-weight: 900;
+  margin-bottom: 1.5rem;
+  background: linear-gradient(135deg, #ffffff 0%, #f0f9ff 50%, #e0f2fe 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+  text-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+  animation: fadeInUp 0.8s ease-out;
+
+  @media (max-width: 768px) {
+    font-size: 3rem;
+    margin-bottom: 1.5rem;
+  }
+
+  @media (max-width: 480px) {
+    font-size: 2rem;
+  }
+}
+
+.features {
+  display: flex;
+  justify-content: center;
+  gap: 3rem;
+  flex-wrap: wrap;
+  animation: fadeInUp 0.8s ease-out 0.4s both;
+
+  @media (max-width: 768px) {
+    gap: 2rem;
+    max-width: 400px;
+    margin: 2rem auto 0 auto;
+  }
+
+  @media (max-width: 480px) {
+    gap: 1.5rem;
+    max-width: 350px;
+  }
+}
+
+.feature {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-weight: 600;
+  font-size: 1.1rem;
+  padding: 1rem 1.5rem;
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 16px;
+  transition: all 0.3s ease;
+  position: relative;
+  z-index: 2;
+  flex: 1;
+  min-width: 0;
+
+  &:hover {
+    transform: translateY(-2px);
+    background: rgba(255, 255, 255, 0.15);
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+  }
+
+  @media (max-width: 768px) {
+    font-size: 1rem;
+    padding: 0.8rem 1.2rem;
+    flex: 0 0 calc(50% - 1rem); // Two items per row with gap
+  }
+
+  @media (max-width: 480px) {
+    flex: 0 0 calc(50% - 0.75rem); // Adjust for smaller gap
+    padding: 0.7rem 1rem;
+  }
+}
+
+.icon {
+  font-size: 1.8rem;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.1));
+}
+
+.promptContainer {
+  margin-top: 4rem;
+  padding: 3rem 2rem;
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 24px;
+  position: relative;
+  z-index: 2;
+  animation: fadeInUp 0.8s ease-out 0.6s both;
+
+  @media (max-width: 768px) {
+    margin-top: 3rem;
+    padding: 2.5rem 1.5rem;
+  }
+}
+
+.promptTitle {
+  font-size: 2.2rem;
+  font-weight: 700;
+  margin-bottom: 2rem;
+  color: white;
+  line-height: 1.2;
+  letter-spacing: -0.01em;
+  text-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+
+  @media (max-width: 768px) {
+    font-size: 1.8rem;
+    margin-bottom: 1.5rem;
+  }
+
+  @media (max-width: 480px) {
+    font-size: 1.5rem;
+  }
+}
+
+.examples {
+  text-align: center;
+  padding: 2rem 0 4rem;
+
+  h3 {
+    font-size: 2.5rem;
+    font-weight: 800;
+    margin-bottom: 3rem;
+    background: var(--gradient-modern);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    letter-spacing: -0.01em;
+
+    @media (max-width: 768px) {
+      font-size: 2rem;
+      margin-bottom: 2rem;
+    }
+  }
+}
+
+.exampleGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 2rem;
+  margin-top: 2rem;
+
+  @media (max-width: 768px) {
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 1.5rem;
+  }
+
+  @media (max-width: 480px) {
+    grid-template-columns: 1fr;
+  }
+}
+
+.exampleCard {
+  background: var(--background-secondary);
+  padding: 2.5rem;
+  border-radius: 20px;
+  box-shadow: var(--shadow-md);
+  border: 1px solid var(--border);
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  text-align: left;
+  position: relative;
+  overflow: hidden;
+
+  &::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: var(--gradient-modern);
+    transform: scaleX(0);
+    transition: transform 0.3s ease;
+  }
+
+  &:hover {
+    transform: translateY(-8px);
+    box-shadow: var(--shadow-xl);
+    border-color: var(--primary);
+
+    &::before {
+      transform: scaleX(1);
+    }
+  }
+
+  h4 {
+    font-size: 1.4rem;
+    font-weight: 700;
+    margin-bottom: 1rem;
+    background: var(--gradient-modern);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  p {
+    color: var(--foreground-secondary);
+    line-height: 1.7;
+    margin: 0;
+    font-size: 1rem;
+  }
+
+  @media (max-width: 768px) {
+    padding: 2rem;
+  }
+}

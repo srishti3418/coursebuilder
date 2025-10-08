@@ -1,0 +1,124 @@
+.promptInput {
+  width: 100%;
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+.form {
+  width: 100%;
+}
+
+.inputContainer {
+  background: white;
+  border-radius: 16px;
+  box-shadow: 0 8px 32px rgba(102, 126, 234, 0.1);
+  border: 2px solid transparent;
+  transition: all 0.3s ease;
+  overflow: hidden;
+
+  &:focus-within {
+    border-color: #667eea;
+    box-shadow: 0 12px 40px rgba(102, 126, 234, 0.2);
+    transform: translateY(-2px);
+  }
+}
+
+.textarea {
+  width: 100%;
+  padding: 1.5rem;
+  border: none;
+  outline: none;
+  resize: vertical;
+  min-height: 120px;
+  font-size: 1rem;
+  line-height: 1.6;
+  font-family: inherit;
+  background: transparent;
+  color: #333;
+
+  &::placeholder {
+    color: #888;
+    font-style: italic;
+  }
+
+  &:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+
+  @media (max-width: 768px) {
+    padding: 1rem;
+    font-size: 0.9rem;
+    min-height: 100px;
+  }
+}
+
+.inputFooter {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem 1.5rem;
+  background: #f8f9ff;
+  border-top: 1px solid #e5e7eb;
+
+  @media (max-width: 768px) {
+    padding: 0.8rem 1rem;
+    flex-direction: column;
+    gap: 0.8rem;
+    align-items: stretch;
+  }
+}
+
+.hint {
+  font-size: 0.85rem;
+  color: #666;
+  font-style: italic;
+
+  @media (max-width: 768px) {
+    text-align: center;
+    font-size: 0.8rem;
+  }
+}
+
+.submitButton {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border: none;
+  padding: 0.8rem 2rem;
+  border-radius: 25px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  white-space: nowrap;
+
+  &:not(:disabled):hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(102, 126, 234, 0.3);
+  }
+
+  &:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
+  }
+
+  @media (max-width: 768px) {
+    width: 100%;
+    justify-content: center;
+    padding: 1rem;
+  }
+}
+
+.spinner {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
