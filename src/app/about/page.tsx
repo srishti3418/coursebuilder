@@ -10,16 +10,14 @@ export default function About() {
       <div className={styles.about}>
         <div className={styles.hero}>
           <h1>About CourseBuilder</h1>
-          <p>Empowering educators and creators with AI-driven course development</p>
+          <p>Empowering learners with AI-driven structured courses</p>
         </div>
 
         <div className={styles.content}>
           <section className={styles.section}>
             <h2>Our Mission</h2>
             <p>
-              We believe that everyone has valuable knowledge to share. CourseBuilder makes it 
-              easy to transform your expertise into engaging, well-structured online courses 
-              using the power of artificial intelligence.
+              CourseBuilder gives learners easy access to well-structured courses — complete with curated videos, notes, and quizzes — all intelligently organized to help you learn any topic from basics to mastery.
             </p>
           </section>
 
@@ -29,7 +27,7 @@ export default function About() {
               <div className={styles.step}>
                 <span className={styles.stepNumber}>1</span>
                 <h3>Describe Your Course</h3>
-                <p>Simply tell us what you want to teach in your own words</p>
+                <p>Simply tell us what you want to learn in your own words</p>
               </div>
               <div className={styles.step}>
                 <span className={styles.stepNumber}>2</span>
@@ -38,8 +36,8 @@ export default function About() {
               </div>
               <div className={styles.step}>
                 <span className={styles.stepNumber}>3</span>
-                <h3>Customize & Publish</h3>
-                <p>Review, edit, and personalize your course before sharing</p>
+                <h3>Save your course (Upcoming feature)</h3>
+                <p>Save your course to your account for future reference</p>
               </div>
             </div>
           </section>

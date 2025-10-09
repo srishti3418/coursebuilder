@@ -1,5 +1,6 @@
 import React from 'react';
 import styles from './VideoGrid.module.scss';
+import { formatDuration, formatViewCount, formatDate, getDifficultyLabel, getDifficultyColor, formatTime } from '@/utils';
 
 // Types for video data
 export interface Video {
@@ -16,110 +17,107 @@ export interface Video {
   duration: string;
   viewCount: string;
   difficultyScore?: number;
+  startTime?: number;  // Optional: for video segments
+  endTime?: number;    // Optional: for video segments
 }
 
 interface VideoGridProps {
   videos: Video[];
   isLoading?: boolean;
   error?: string | null;
+  hasSearched?: boolean;
 }
 
-// Utility functions
-const formatDuration = (duration: string): string => {
-  const match = duration.match(/PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?/);
-  if (!match) return 'Unknown';
-
-  const hours = parseInt(match[1] || '0');
-  const minutes = parseInt(match[2] || '0');
-  const seconds = parseInt(match[3] || '0');
-
-  if (hours > 0) {
-    return `${hours}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
-  } else {
-    return `${minutes}:${seconds.toString().padStart(2, '0')}`;
-  }
-};
-
-const formatViewCount = (viewCount: string): string => {
-  const count = parseInt(viewCount);
-  if (count >= 1000000) {
-    return `${(count / 1000000).toFixed(1)}M views`;
-  } else if (count >= 1000) {
-    return `${(count / 1000).toFixed(1)}K views`;
-  } else {
-    return `${count} views`;
-  }
-};
-
-const formatDate = (dateString: string): string => {
-  const date = new Date(dateString);
-  const now = new Date();
-  const diffInDays = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60 * 24));
-  
-  if (diffInDays === 0) return 'Today';
-  if (diffInDays === 1) return 'Yesterday';
-  if (diffInDays < 7) return `${diffInDays} days ago`;
-  if (diffInDays < 30) return `${Math.floor(diffInDays / 7)} weeks ago`;
-  if (diffInDays < 365) return `${Math.floor(diffInDays / 30)} months ago`;
-  return `${Math.floor(diffInDays / 365)} years ago`;
-};
-
-const getDifficultyLabel = (score?: number): string => {
-  switch (score) {
-    case 0: return 'Beginner';
-    case 1: return 'Intermediate';
-    case 2: return 'Advanced';
-    default: return 'Intermediate';
-  }
-};
-
-const getDifficultyColor = (score?: number): string => {
-  switch (score) {
-    case 0: return '#10b981'; // Green for beginner
-    case 1: return '#f59e0b'; // Yellow for intermediate
-    case 2: return '#ef4444'; // Red for advanced
-    default: return '#6b7280'; // Gray for unknown
-  }
-};
 
 const VideoCard: React.FC<{ video: Video; index: number }> = ({ video, index }) => {
+  const [showEmbed, setShowEmbed] = React.useState(false);
+  
   const handleVideoClick = () => {
-    // Open YouTube video in new tab
-    window.open(`https://www.youtube.com/watch?v=${video.id}`, '_blank');
+    if (video.startTime !== undefined && video.endTime !== undefined) {
+      // Show embedded video segment instead of opening new tab
+      setShowEmbed(true);
+    } else {
+      // Open YouTube video in new tab for regular videos
+      window.open(`https://www.youtube.com/watch?v=${video.id}`, '_blank');
+    }
+  };
+
+  const handleCloseEmbed = () => {
+    setShowEmbed(false);
   };
 
   return (
-    <div className={styles.videoCard} onClick={handleVideoClick}>
-      <div className={styles.thumbnailContainer}>
-        <img
-          src={video.thumbnails.medium.url}
-          alt={video.title}
-          className={styles.thumbnail}
-        />
-        <div className={styles.duration}>
-          {formatDuration(video.duration)}
+    <>
+      <div className={styles.videoCard} onClick={handleVideoClick}>
+        <div className={styles.thumbnailContainer}>
+          <img
+            src={video.thumbnails.medium.url}
+            alt={video.title}
+            className={styles.thumbnail}
+          />
+          <div className={styles.duration}>
+            {formatDuration(video.duration)}
+          </div>
+          <div className={styles.difficultyBadge} style={{ backgroundColor: getDifficultyColor(video.difficultyScore) }}>
+            {getDifficultyLabel(video.difficultyScore)}
+          </div>
+          
+          {video.startTime !== undefined && video.endTime !== undefined && (
+            <div className={styles.playOverlay}>
+              ▶️ Play Segment
+            </div>
+          )}
         </div>
-        <div className={styles.difficultyBadge} style={{ backgroundColor: getDifficultyColor(video.difficultyScore) }}>
-          {getDifficultyLabel(video.difficultyScore)}
+        
+        <div className={styles.videoInfo}>
+          <h3 className={styles.title}>{video.title}</h3>
+          <p className={styles.channel}>{video.channelTitle}</p>
+          <div className={styles.metadata}>
+            <span className={styles.views}>{formatViewCount(video.viewCount)}</span>
+            <span className={styles.separator}>•</span>
+            <span className={styles.date}>{formatDate(video.publishedAt)}</span>
+          </div>
+          <p className={styles.description}>
+            {video.description.length > 100 
+              ? `${video.description.substring(0, 100)}...` 
+              : video.description
+            }
+          </p>
         </div>
       </div>
-      
-      <div className={styles.videoInfo}>
-        <h3 className={styles.title}>{video.title}</h3>
-        <p className={styles.channel}>{video.channelTitle}</p>
-        <div className={styles.metadata}>
-          <span className={styles.views}>{formatViewCount(video.viewCount)}</span>
-          <span className={styles.separator}>•</span>
-          <span className={styles.date}>{formatDate(video.publishedAt)}</span>
+
+      {/* Embedded Video Modal */}
+      {showEmbed && video.startTime !== undefined && video.endTime !== undefined && (
+        <div className={styles.embedModal} onClick={handleCloseEmbed}>
+          <div className={styles.embedContainer} onClick={(e) => e.stopPropagation()}>
+            <button className={styles.closeButton} onClick={handleCloseEmbed}>
+              ✕
+            </button>
+            <div className={styles.embedHeader}>
+              <h3>{video.title}</h3>
+              <p>{video.channelTitle}</p>
+            </div>
+            <div className={styles.embedVideo}>
+              <iframe
+                src={`https://www.youtube.com/embed/${video.id}?start=${Math.floor(video.startTime)}&end=${Math.floor(video.endTime)}&autoplay=1&rel=0`}
+                title={video.title}
+                frameBorder="0"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                allowFullScreen
+              />
+            </div>
+            <div className={styles.embedActions}>
+              <button 
+                className={styles.watchFullButton}
+                onClick={() => window.open(`https://www.youtube.com/watch?v=${video.id}`, '_blank')}
+              >
+                Watch Full Video on YouTube
+              </button>
+            </div>
+          </div>
         </div>
-        <p className={styles.description}>
-          {video.description.length > 100 
-            ? `${video.description.substring(0, 100)}...` 
-            : video.description
-          }
-        </p>
-      </div>
-    </div>
+      )}
+    </>
   );
 };
 
@@ -138,7 +136,7 @@ const LoadingSkeleton: React.FC = () => (
   </div>
 );
 
-const VideoGrid: React.FC<VideoGridProps> = ({ videos, isLoading, error }) => {
+const VideoGrid: React.FC<VideoGridProps> = ({ videos, isLoading, error, hasSearched }) => {
   if (error) {
     return (
       <div className={styles.errorContainer}>
@@ -170,16 +168,21 @@ const VideoGrid: React.FC<VideoGridProps> = ({ videos, isLoading, error }) => {
     );
   }
 
-  if (!videos || videos.length === 0) {
+  if ((!videos || videos.length === 0) && hasSearched) {
     return (
       <div className={styles.emptyContainer}>
         <div className={styles.emptyIcon}>📺</div>
-        <h3 className={styles.emptyTitle}>No videos found</h3>
+        <h3 className={styles.emptyTitle}>No videos available</h3>
         <p className={styles.emptyMessage}>
-          Try searching for a different topic or check your internet connection.
+          Please give a valid input to find relevant videos. Try searching for educational topics like programming, design, or other learning subjects.
         </p>
       </div>
     );
+  }
+
+  // If no search has been attempted yet, don't render anything (examples will show)
+  if (!hasSearched) {
+    return null;
   }
 
   return (
@@ -188,9 +191,6 @@ const VideoGrid: React.FC<VideoGridProps> = ({ videos, isLoading, error }) => {
         <h2 className={styles.sectionTitle}>
           Recommended Learning Path ({videos.length} videos)
         </h2>
-        <p className={styles.sectionSubtitle}>
-          Videos are ordered from beginner to advanced level
-        </p>
       </div>
       
       <div className={styles.grid}>

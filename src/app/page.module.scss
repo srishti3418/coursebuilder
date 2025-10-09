@@ -145,12 +145,6 @@
   flex: 1;
   min-width: 0;
 
-  &:hover {
-    transform: translateY(-2px);
-    background: rgba(255, 255, 255, 0.15);
-    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
-  }
-
   @media (max-width: 768px) {
     font-size: 1rem;
     padding: 0.8rem 1.2rem;
@@ -252,6 +246,7 @@
   text-align: left;
   position: relative;
   overflow: hidden;
+  cursor: pointer;
 
   &::before {
     content: '';
@@ -290,6 +285,22 @@
     line-height: 1.7;
     margin: 0;
     font-size: 1rem;
+  }
+
+  &::after {
+    content: 'Click to generate course →';
+    position: absolute;
+    bottom: 1rem;
+    right: 1.5rem;
+    font-size: 0.8rem;
+    color: var(--primary);
+    font-weight: 600;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+  }
+
+  &:hover::after {
+    opacity: 1;
   }
 
   @media (max-width: 768px) {

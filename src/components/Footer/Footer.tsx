@@ -15,14 +15,14 @@ const Footer: React.FC = () => {
             <h4>Quick Links</h4>
             <ul>
               <li><Link href="/">Home</Link></li>
-              <li><Link href="/courses">Courses</Link></li>
+              {/* <li><Link href="/courses">Courses</Link></li> */}
               <li><Link href="/about">About</Link></li>
             </ul>
           </div>
           <div className={styles.section}>
             <h4>Contact</h4>
-            <p>Email: info@coursebuilder.com</p>
-            <p>Phone: (555) 123-4567</p>
+            <p>GitHub: <a target="_blank" href="https://github.com/srishti3418/coursebuilder">CourseBuilderRepo</a></p>
+            <p>Phone: (+91) 7667812287</p>
           </div>
         </div>
         <div className={styles.bottom}>
