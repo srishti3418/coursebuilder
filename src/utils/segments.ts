@@ -5,7 +5,7 @@
 /**
  * Generate appropriate segment titles based on the topic
  */
-export function generateSegmentTitles(query: string, segmentCount: number): string[] {
+export function generateSegmentTitles(query: string): string[] {
   const topic = query.toLowerCase();
   
   // Technology-specific patterns
@@ -77,7 +77,7 @@ export function createEqualSegments(totalSeconds: number, query: string): Array<
   const segmentDuration = Math.floor(totalSeconds / segmentCount);
   const segments: Array<{startTime: number, endTime: number, title: string}> = [];
   
-  const segmentTitles = generateSegmentTitles(query, segmentCount);
+  const segmentTitles = generateSegmentTitles(query);
   
   for (let i = 0; i < segmentCount; i++) {
     const startTime = i * segmentDuration;

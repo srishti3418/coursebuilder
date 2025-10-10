@@ -1,6 +1,7 @@
 import React from 'react';
+import Image from 'next/image';
 import styles from './VideoGrid.module.scss';
-import { formatDuration, formatViewCount, formatDate, getDifficultyLabel, getDifficultyColor, formatTime } from '@/utils';
+import { formatDuration, formatViewCount, formatDate, getDifficultyLabel, getDifficultyColor } from '@/utils';
 
 // Types for video data
 export interface Video {
@@ -29,7 +30,7 @@ interface VideoGridProps {
 }
 
 
-const VideoCard: React.FC<{ video: Video; index: number }> = ({ video, index }) => {
+const VideoCard: React.FC<{ video: Video; index: number }> = ({ video }) => {
   const [showEmbed, setShowEmbed] = React.useState(false);
   
   const handleVideoClick = () => {
@@ -50,9 +51,11 @@ const VideoCard: React.FC<{ video: Video; index: number }> = ({ video, index }) 
     <>
       <div className={styles.videoCard} onClick={handleVideoClick}>
         <div className={styles.thumbnailContainer}>
-          <img
+          <Image
             src={video.thumbnails.medium.url}
             alt={video.title}
+            width={320}
+            height={180}
             className={styles.thumbnail}
           />
           <div className={styles.duration}>
@@ -195,7 +198,7 @@ const VideoGrid: React.FC<VideoGridProps> = ({ videos, isLoading, error, hasSear
       
       <div className={styles.grid}>
         {videos.map((video, index) => (
-          <VideoCard key={video.id} video={video} index={index} />
+          <VideoCard key={`${video.id}-${video.startTime}-${video.endTime}`} video={video} index={index} />
         ))}
       </div>
     </div>

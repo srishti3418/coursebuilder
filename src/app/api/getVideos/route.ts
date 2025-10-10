@@ -6,17 +6,7 @@ import {
   extractTimestampsFromDescription,
   createSegmentsFromTimestamps,
   createEqualSegments,
-  generateSegmentTitles,
-  sortVideosByDifficulty,
-  calculateDifficultyScore,
-  formatDuration,
-  formatViewCount,
-  generateVideoId,
-  getRandomTutorialType,
-  getRandomDescription,
-  getRandomDate,
-  getRandomDuration,
-  getRandomViewCount
+  sortVideosByDifficulty
 } from '@/utils';
 interface YouTubeVideo {
   id: string;
@@ -29,45 +19,41 @@ interface YouTubeVideo {
     medium: { url: string };
     high: { url: string };
   };
-  duration: string;
-  viewCount: string;
+  contentDetails: {
+    duration: string;
+  };
+  statistics: {
+    viewCount: string;
+  };
+  duration?: string;  // For segments
+  viewCount?: string; // For segments
   startTime?: number;  
   endTime?: number;    
 }
 
-interface YouTubeSearchResponse {
-  items: Array<{
-    id: { videoId: string };
-    snippet: {
-      title: string;
-      description: string;
-      channelTitle: string;
-      publishedAt: string;
-      thumbnails: {
-        default: { url: string };
-        medium: { url: string };
-        high: { url: string };
-      };
+interface YouTubeSearchItem {
+  id: { videoId: string };
+  snippet: {
+    title: string;
+    description: string;
+    channelTitle: string;
+    publishedAt: string;
+    thumbnails: {
+      default: { url: string };
+      medium: { url: string };
+      high: { url: string };
     };
-  }>;
-}
-
-interface YouTubeVideoDetailsResponse {
-  items: Array<{
-    id: string;
-    contentDetails: {
-      duration: string;
-    };
-    statistics: {
-      viewCount: string;
-    };
-  }>;
+  };
 }
 
 
 // Cache for storing results (in-memory cache)
-const videoCache = new Map<string, { data: any; timestamp: number }>();
-const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
+// interface CacheEntry {
+//   data: Video[];
+//   timestamp: number;
+// }
+// const videoCache = new Map<string, CacheEntry>();
+// const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
 
 export async function POST(request: NextRequest) {
   try {
@@ -99,13 +85,13 @@ export async function POST(request: NextRequest) {
 async function fetchYouTubeVideos(query: string): Promise<YouTubeVideo[]> {
   try {
     // Use YouTube's search endpoint to get real videos
-    const searchUrl = `https://www.youtube.com/results?search_query=${encodeURIComponent(query + ' tutorial')}`;
+    // const searchUrl = `https://www.youtube.com/results?search_query=${encodeURIComponent(query + ' tutorial')}`;
     
     // For demo purposes, we'll use a combination of real search and fallback videos
     // In production, you would use YouTube Data API v3 or a scraping service
     
     const videos = await scrapeYouTubeVideos(query);
-    return sortVideosByDifficulty(videos, query);
+    return sortVideosByDifficulty(videos);
     
   } catch (error) {
     console.error('Error fetching YouTube videos:', error);
@@ -132,7 +118,7 @@ async function scrapeYouTubeVideos(query: string): Promise<YouTubeVideo[]> {
       `${query} course tutorial`        // Course tutorial alternative
     ];
 
-    let bestVideo: any = null;
+    let bestVideo: YouTubeVideo | null = null;
     let maxViews = 0;
     
     // Find the most viewed crash course video
@@ -155,7 +141,7 @@ async function scrapeYouTubeVideos(query: string): Promise<YouTubeVideo[]> {
           const searchData = await searchResponse.json();
           if (searchData.items && searchData.items.length > 0) {
             // Get detailed info for these videos to check view counts
-            const videoIds = searchData.items.map((item: any) => item.id.videoId).join(',');
+            const videoIds = searchData.items.map((item: YouTubeSearchItem) => item.id.videoId).join(',');
             
             const detailsResponse = await fetch(
               `https://www.googleapis.com/youtube/v3/videos?` +
@@ -175,7 +161,16 @@ async function scrapeYouTubeVideos(query: string): Promise<YouTubeVideo[]> {
                 // Prefer videos that are 30+ minutes (good crash courses)
                 if (viewCount > maxViews && isLongVideo(duration)) {
                   maxViews = viewCount;
-                  bestVideo = video;
+                  bestVideo = {
+                    id: video.id,
+                    title: video.snippet.title,
+                    description: video.snippet.description,
+                    channelTitle: video.snippet.channelTitle,
+                    publishedAt: video.snippet.publishedAt,
+                    thumbnails: video.snippet.thumbnails,
+                    contentDetails: video.contentDetails,
+                    statistics: video.statistics
+                  };
                 }
               }
             }
@@ -203,12 +198,12 @@ async function scrapeYouTubeVideos(query: string): Promise<YouTubeVideo[]> {
 
 
 // Function to split a long video into smaller segments based on actual timestamps
-async function splitVideoIntoSegments(video: any, query: string): Promise<YouTubeVideo[]> {
+async function splitVideoIntoSegments(video: YouTubeVideo, query: string): Promise<YouTubeVideo[]> {
   const duration = video.contentDetails.duration;
   const totalSeconds = parseDurationToSeconds(duration);
   
   // Extract timestamps from video description
-  const timestamps = extractTimestampsFromDescription(video.snippet.description || '');
+  const timestamps = extractTimestampsFromDescription(video.description || '');
   
   // If we found timestamps, use them; otherwise create equal segments
   let segments: Array<{startTime: number, endTime: number, title: string}>;
@@ -228,16 +223,22 @@ async function splitVideoIntoSegments(video: any, query: string): Promise<YouTub
     videoSegments.push({
       id: video.id,
       title: segment.title,
-      description: `Segment ${i + 1}: ${video.snippet.description?.substring(0, 100)}...`,
-      channelTitle: video.snippet.channelTitle,
-      publishedAt: video.snippet.publishedAt,
+      description: `Segment ${i + 1}: ${video.description?.substring(0, 100)}...`,
+      channelTitle: video.channelTitle,
+      publishedAt: video.publishedAt,
       thumbnails: {
-        default: { url: video.snippet.thumbnails.default?.url || `https://img.youtube.com/vi/${video.id}/default.jpg` },
-        medium: { url: video.snippet.thumbnails.medium?.url || `https://img.youtube.com/vi/${video.id}/mqdefault.jpg` },
-        high: { url: video.snippet.thumbnails.high?.url || `https://img.youtube.com/vi/${video.id}/hqdefault.jpg` }
+        default: { url: video.thumbnails?.default?.url || `https://img.youtube.com/vi/${video.id}/default.jpg` },
+        medium: { url: video.thumbnails?.medium?.url || `https://img.youtube.com/vi/${video.id}/mqdefault.jpg` },
+        high: { url: video.thumbnails?.high?.url || `https://img.youtube.com/vi/${video.id}/hqdefault.jpg` }
+      },
+      contentDetails: {
+        duration: formatSecondsToDuration(segment.endTime - segment.startTime)
+      },
+      statistics: {
+        viewCount: video.statistics?.viewCount || '0'
       },
       duration: formatSecondsToDuration(segment.endTime - segment.startTime),
-      viewCount: video.statistics.viewCount,
+      viewCount: video.statistics?.viewCount || '0',
       startTime: segment.startTime,
       endTime: segment.endTime
     });

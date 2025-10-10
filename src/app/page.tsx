@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import AppLayout from '@/components/AppLayout/AppLayout';
 import PromptInput from '@/components/PromptInput/PromptInput';
 import VideoGrid, { Video } from '@/components/VideoGrid/VideoGrid';
@@ -12,6 +12,7 @@ export default function Home() {
   const [error, setError] = useState<string | null>(null);
   const [searchTimestamp, setSearchTimestamp] = useState<number>(0);
   const [hasSearched, setHasSearched] = useState<boolean>(false);
+  const videoSectionRef = useRef<HTMLDivElement>(null);
 
   const handlePromptSubmit = async (prompt: string) => {
     setVideos([]);
@@ -44,9 +45,29 @@ export default function Home() {
       }
 
       setVideos(data.videos || []);
+      
+      // Scroll to video section after videos are loaded
+      setTimeout(() => {
+        if (videoSectionRef.current) {
+          videoSectionRef.current.scrollIntoView({ 
+            behavior: 'smooth',
+            block: 'start'
+          });
+        }
+      }, 100);
     } catch (err) {
       console.error('Error fetching videos:', err);
       setError(err instanceof Error ? err.message : 'Failed to fetch videos');
+      
+      // Scroll to video section even on error to show the error message
+      setTimeout(() => {
+        if (videoSectionRef.current) {
+          videoSectionRef.current.scrollIntoView({ 
+            behavior: 'smooth',
+            block: 'start'
+          });
+        }
+      }, 100);
     } finally {
       setIsLoading(false);
     }
@@ -85,13 +106,15 @@ export default function Home() {
         </section>
 
         {/* Video Results Section */}
-        <VideoGrid 
-          key={searchTimestamp}
-          videos={videos}
-          isLoading={isLoading}
-          error={error}
-          hasSearched={hasSearched}
-        />
+        <div ref={videoSectionRef}>
+          <VideoGrid 
+            key={searchTimestamp}
+            videos={videos}
+            isLoading={isLoading}
+            error={error}
+            hasSearched={hasSearched}
+          />
+        </div>
 
         {/* Examples Section - Only show when no videos are displayed and not loading/error */}
         {videos.length === 0 && !isLoading && !error && (

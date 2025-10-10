@@ -12,7 +12,7 @@ export const DIFFICULTY_KEYWORDS = {
 /**
  * Calculate difficulty score for a video based on title and description
  */
-export function calculateDifficultyScore(video: { title: string; description: string }, query: string): number {
+export function calculateDifficultyScore(video: { title: string; description: string }): number {
   const title = video.title.toLowerCase();
   const description = video.description.toLowerCase();
   const text = `${title} ${description}`;
@@ -46,12 +46,11 @@ export function calculateDifficultyScore(video: { title: string; description: st
  * Sort videos by difficulty (beginner -> intermediate -> advanced)
  */
 export function sortVideosByDifficulty<T extends { title: string; description: string }>(
-  videos: T[], 
-  query: string
+  videos: T[]
 ): (T & { difficultyScore: number })[] {
   return videos.map(video => ({
     ...video,
-    difficultyScore: calculateDifficultyScore(video, query)
+    difficultyScore: calculateDifficultyScore(video)
   })).sort((a, b) => {
     // Sort by difficulty: beginner (0) -> intermediate (1) -> advanced (2)
     return a.difficultyScore - b.difficultyScore;
