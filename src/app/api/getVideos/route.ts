@@ -6,7 +6,8 @@ import {
   extractTimestampsFromDescription,
   createSegmentsFromTimestamps,
   createEqualSegments,
-  sortVideosByDifficulty
+  sortVideosByDifficulty,
+  throttledYouTubeApiCall
 } from '@/utils';
 interface YouTubeVideo {
   id: string;
@@ -46,6 +47,33 @@ interface YouTubeSearchItem {
   };
 }
 
+interface YouTubeSearchResponse {
+  items: YouTubeSearchItem[];
+}
+
+interface YouTubeVideoDetailsResponse {
+  items: Array<{
+    id: string;
+    snippet: {
+      title: string;
+      description: string;
+      channelTitle: string;
+      publishedAt: string;
+      thumbnails: {
+        default: { url: string };
+        medium: { url: string };
+        high: { url: string };
+      };
+    };
+    contentDetails: {
+      duration: string;
+    };
+    statistics: {
+      viewCount: string;
+    };
+  }>;
+}
+
 
 // Cache for storing results (in-memory cache)
 // interface CacheEntry {
@@ -75,6 +103,15 @@ export async function POST(request: NextRequest) {
 
   } catch (error) {
     console.error('Error fetching videos:', error);
+    
+    // Handle quota exceeded errors specifically
+    if (error instanceof Error && error.message.includes('quota')) {
+      return NextResponse.json(
+        { error: 'YouTube API quota exceeded. Please try again later.' },
+        { status: 429 }
+      );
+    }
+    
     return NextResponse.json(
       { error: 'Failed to fetch videos' },
       { status: 500 }
@@ -124,8 +161,7 @@ async function scrapeYouTubeVideos(query: string): Promise<YouTubeVideo[]> {
     // Find the most viewed crash course video
     for (const searchQuery of crashCourseQueries) {
       try {
-        const searchResponse = await fetch(
-          `https://www.googleapis.com/youtube/v3/search?` +
+        const searchUrl = `https://www.googleapis.com/youtube/v3/search?` +
           `part=snippet&` +
           `q=${encodeURIComponent(searchQuery)}&` +
           `type=video&` +
@@ -134,50 +170,52 @@ async function scrapeYouTubeVideos(query: string): Promise<YouTubeVideo[]> {
           `relevanceLanguage=en&` +
           `maxResults=5&` +              // Get top 5 to find best one
           `order=relevance&` +           // Order by relevance first
-          `key=${apiKey}`
-        );
+          `key=${apiKey}`;
 
-        if (searchResponse.ok) {
-          const searchData = await searchResponse.json();
-          if (searchData.items && searchData.items.length > 0) {
-            // Get detailed info for these videos to check view counts
-            const videoIds = searchData.items.map((item: YouTubeSearchItem) => item.id.videoId).join(',');
-            
-            const detailsResponse = await fetch(
-              `https://www.googleapis.com/youtube/v3/videos?` +
-              `part=snippet,contentDetails,statistics&` +
-              `id=${videoIds}&` +
-              `key=${apiKey}`
-            );
+        const searchResult = await throttledYouTubeApiCall<YouTubeSearchResponse>(searchUrl);
+        
+        if (searchResult.data && searchResult.data.items && searchResult.data.items.length > 0) {
+          // Get detailed info for these videos to check view counts
+          const videoIds = searchResult.data.items.map((item: YouTubeSearchItem) => item.id.videoId).join(',');
+          
+          const detailsUrl = `https://www.googleapis.com/youtube/v3/videos?` +
+            `part=snippet,contentDetails,statistics&` +
+            `id=${videoIds}&` +
+            `key=${apiKey}`;
 
-            if (detailsResponse.ok) {
-              const detailsData = await detailsResponse.json();
+          const detailsResult = await throttledYouTubeApiCall<YouTubeVideoDetailsResponse>(detailsUrl);
+
+          if (detailsResult.data && detailsResult.data.items) {
+            const detailsData = detailsResult.data;
               
-              // Find the video with highest view count
-              for (const video of detailsData.items) {
-                const viewCount = parseInt(video.statistics.viewCount || '0');
-                const duration = video.contentDetails.duration;
-                
-                // Prefer videos that are 30+ minutes (good crash courses)
-                if (viewCount > maxViews && isLongVideo(duration)) {
-                  maxViews = viewCount;
-                  bestVideo = {
-                    id: video.id,
-                    title: video.snippet.title,
-                    description: video.snippet.description,
-                    channelTitle: video.snippet.channelTitle,
-                    publishedAt: video.snippet.publishedAt,
-                    thumbnails: video.snippet.thumbnails,
-                    contentDetails: video.contentDetails,
-                    statistics: video.statistics
-                  };
-                }
+            // Find the video with highest view count
+            for (const video of detailsData.items) {
+              const viewCount = parseInt(video.statistics.viewCount || '0');
+              const duration = video.contentDetails.duration;
+              
+              // Prefer videos that are 30+ minutes (good crash courses)
+              if (viewCount > maxViews && isLongVideo(duration)) {
+                maxViews = viewCount;
+                bestVideo = {
+                  id: video.id,
+                  title: video.snippet.title,
+                  description: video.snippet.description,
+                  channelTitle: video.snippet.channelTitle,
+                  publishedAt: video.snippet.publishedAt,
+                  thumbnails: video.snippet.thumbnails,
+                  contentDetails: video.contentDetails,
+                  statistics: video.statistics
+                };
               }
             }
+          } else if (detailsResult.error) {
+            console.warn(`Details API failed for query: ${searchQuery}`, detailsResult.error);
           }
+        } else if (searchResult.error) {
+          console.warn(`Search API failed for query: ${searchQuery}`, searchResult.error);
         }
       } catch (error) {
-        console.warn(`Search failed for query: ${searchQuery}`, error);
+        console.warn(`Unexpected error for query: ${searchQuery}`, error);
       }
     }
 
@@ -191,6 +229,12 @@ async function scrapeYouTubeVideos(query: string): Promise<YouTubeVideo[]> {
     
   } catch (error) {
     console.error('Error fetching from YouTube API:', error);
+    
+    // Check if it's a quota exceeded error
+    if (error instanceof Error && error.message.includes('quota')) {
+      throw new Error('YouTube API quota exceeded. Please try again later.');
+    }
+    
     // Fallback to educational videos if API fails
     return getFallbackVideos(query);
   }

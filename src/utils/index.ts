@@ -19,3 +19,6 @@ export * from './difficulty';
 
 // Random data utilities
 export * from './random';
+
+// API throttling utilities
+export * from './apiThrottle';
