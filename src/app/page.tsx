@@ -79,7 +79,7 @@ export default function Home() {
         <section className={styles.hero}>
           <div className={styles.heroContent}>
             <h1 className={styles.title}>
-              Build Amazing Courses with AI
+              Build Amazing Courses for Fast Learning
             </h1>
             <div className={styles.features}>
               <div className={styles.feature}>
