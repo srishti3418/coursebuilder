@@ -151,15 +151,14 @@ async function scrapeYouTubeVideos(query: string): Promise<YouTubeVideo[]> {
     const crashCourseQueries = [
       `${query} crash course`,          // Most popular crash course
       `${query} complete course`,       // Complete course alternative
-      `${query} full tutorial`,         // Full tutorial alternative
-      `${query} course tutorial`        // Course tutorial alternative
+      `${query} full tutorial`          // Full tutorial alternative
     ];
 
     let bestVideo: YouTubeVideo | null = null;
     let maxViews = 0;
     
-    // Find the most viewed crash course video
-    for (const searchQuery of crashCourseQueries) {
+    // Make all search queries in parallel for faster results
+    const searchPromises = crashCourseQueries.map(async (searchQuery) => {
       try {
         const searchUrl = `https://www.googleapis.com/youtube/v3/search?` +
           `part=snippet&` +
@@ -168,54 +167,61 @@ async function scrapeYouTubeVideos(query: string): Promise<YouTubeVideo[]> {
           `videoDuration=long&` +        // Look for longer videos (crash courses)
           `videoDefinition=high&` +
           `relevanceLanguage=en&` +
-          `maxResults=5&` +              // Get top 5 to find best one
+          `maxResults=3&` +              // Reduced from 5 to 3 for faster response
           `order=relevance&` +           // Order by relevance first
           `key=${apiKey}`;
 
         const searchResult = await throttledYouTubeApiCall<YouTubeSearchResponse>(searchUrl);
         
         if (searchResult.data && searchResult.data.items && searchResult.data.items.length > 0) {
-          // Get detailed info for these videos to check view counts
-          const videoIds = searchResult.data.items.map((item: YouTubeSearchItem) => item.id.videoId).join(',');
-          
-          const detailsUrl = `https://www.googleapis.com/youtube/v3/videos?` +
-            `part=snippet,contentDetails,statistics&` +
-            `id=${videoIds}&` +
-            `key=${apiKey}`;
-
-          const detailsResult = await throttledYouTubeApiCall<YouTubeVideoDetailsResponse>(detailsUrl);
-
-          if (detailsResult.data && detailsResult.data.items) {
-            const detailsData = detailsResult.data;
-              
-            // Find the video with highest view count
-            for (const video of detailsData.items) {
-              const viewCount = parseInt(video.statistics.viewCount || '0');
-              const duration = video.contentDetails.duration;
-              
-              // Prefer videos that are 30+ minutes (good crash courses)
-              if (viewCount > maxViews && isLongVideo(duration)) {
-                maxViews = viewCount;
-                bestVideo = {
-                  id: video.id,
-                  title: video.snippet.title,
-                  description: video.snippet.description,
-                  channelTitle: video.snippet.channelTitle,
-                  publishedAt: video.snippet.publishedAt,
-                  thumbnails: video.snippet.thumbnails,
-                  contentDetails: video.contentDetails,
-                  statistics: video.statistics
-                };
-              }
-            }
-          } else if (detailsResult.error) {
-            console.warn(`Details API failed for query: ${searchQuery}`, detailsResult.error);
-          }
-        } else if (searchResult.error) {
-          console.warn(`Search API failed for query: ${searchQuery}`, searchResult.error);
+          return searchResult.data.items.map((item: YouTubeSearchItem) => item.id.videoId);
         }
+        return [];
       } catch (error) {
-        console.warn(`Unexpected error for query: ${searchQuery}`, error);
+        console.warn(`Error in search query: ${searchQuery}`, error);
+        return [];
+      }
+    });
+
+    // Wait for all searches to complete in parallel
+    const allVideoIds = (await Promise.all(searchPromises)).flat();
+    
+    if (allVideoIds.length > 0) {
+      // Get unique video IDs and limit to top 10
+      const uniqueVideoIds = [...new Set(allVideoIds)].slice(0, 10);
+      const videoIds = uniqueVideoIds.join(',');
+      
+      // Get detailed info for all videos in one API call
+      const detailsUrl = `https://www.googleapis.com/youtube/v3/videos?` +
+        `part=snippet,contentDetails,statistics&` +
+        `id=${videoIds}&` +
+        `key=${apiKey}`;
+
+      const detailsResult = await throttledYouTubeApiCall<YouTubeVideoDetailsResponse>(detailsUrl);
+
+      if (detailsResult.data && detailsResult.data.items) {
+        // Find the video with highest view count that's long enough
+        for (const video of detailsResult.data.items) {
+          const viewCount = parseInt(video.statistics.viewCount || '0');
+          const duration = video.contentDetails.duration;
+          
+          // Prefer videos that are 30+ minutes (good crash courses)
+          if (viewCount > maxViews && isLongVideo(duration)) {
+            maxViews = viewCount;
+            bestVideo = {
+              id: video.id,
+              title: video.snippet.title,
+              description: video.snippet.description,
+              channelTitle: video.snippet.channelTitle,
+              publishedAt: video.snippet.publishedAt,
+              thumbnails: video.snippet.thumbnails,
+              contentDetails: video.contentDetails,
+              statistics: video.statistics
+            };
+          }
+        }
+      } else if (detailsResult.error) {
+        console.warn('Details API failed:', detailsResult.error);
       }
     }
 

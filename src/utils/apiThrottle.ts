@@ -18,7 +18,7 @@ interface ApiResponse<T> {
 class ApiThrottler {
   private lastRequestTime = 0;
   private requestCount = 0;
-  private readonly defaultDelay = 1000; // 1 second between requests
+  private readonly defaultDelay = 100; // Reduced from 1000ms to 100ms for faster responses
   private readonly maxRequestsPerMinute = 50; // YouTube API limit
   private readonly requestTimes: number[] = [];
 
@@ -196,7 +196,7 @@ export async function throttledYouTubeApiCall<T>(
   options: RequestInit = {}
 ): Promise<ApiResponse<T>> {
   return throttledFetch<T>(url, options, {
-    delayMs: 1200, // Slightly more than 1 second for safety
+    delayMs: 100, // Reduced from 1200ms to 100ms for faster responses
     maxRetries: 3,
     backoffMultiplier: 2
   });

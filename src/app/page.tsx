@@ -21,9 +21,6 @@ export default function Home() {
     setSearchTimestamp(Date.now()); // Update timestamp to force re-render
     setHasSearched(true); // Mark that a search has been attempted
 
-    // Small delay to ensure UI updates before fetching
-    await new Promise(resolve => setTimeout(resolve, 100));
-
     try {
       console.log('Starting to fetch new videos...');
       const response = await fetch('/api/getVideos', {
